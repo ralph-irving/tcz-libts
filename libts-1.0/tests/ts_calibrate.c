@@ -235,13 +235,13 @@ int main()
 	// Clear the buffer
 	clearbuf(ts);
 
-	get_sample (ts, &cal, 0, 50,        50,        "Top left");
+	get_sample (ts, &cal, 0, 10,        10,        "Top left");
 	clearbuf(ts);
-	get_sample (ts, &cal, 1, xres - 50, 50,        "Top right");
+	get_sample (ts, &cal, 1, xres - 10, 10,        "Top right");
 	clearbuf(ts);
-	get_sample (ts, &cal, 2, xres - 50, yres - 50, "Bot right");
+	get_sample (ts, &cal, 2, xres - 10, yres - 10, "Bot right");
 	clearbuf(ts);
-	get_sample (ts, &cal, 3, 50,        yres - 50, "Bot left");
+	get_sample (ts, &cal, 3, 10,        yres - 10, "Bot left");
 	clearbuf(ts);
 	get_sample (ts, &cal, 4, xres / 2,  yres / 2,  "Center");
 
