@@ -27,7 +27,7 @@ cd $SRC >> $LOG
 make distclean
 
 echo "Configuring..."
-export CFLAGS="-s -O3 -march=armv6 -mfloat-abi=hard -mfpu=vfp"
+export CFLAGS="-s -march=armv6 -mfloat-abi=hard -mfpu=vfp"
 export CXXFLAGS="${CFLAGS}"
 
 ./configure --prefix=/usr/local --enable-shared=yes --enable-static=no >> $LOG
