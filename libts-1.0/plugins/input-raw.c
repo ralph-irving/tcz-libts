@@ -146,13 +146,27 @@ static int ts_input_read(struct tslib_module_info *inf,
 		i->sane_fd = check_fd(i);
 
 	if (i->sane_fd == -1)
-		return 0;
+		return -1;
 
 	if (i->using_syn) {
 		while (total < nr) {
 			ret = read(ts->fd, &ev, sizeof(struct input_event));
 			if (ret < (int)sizeof(struct input_event)) {
-				total = -1;
+				if (ret < 0) {
+					if (errno == EINTR) {
+						continue;
+					} else if (errno == EAGAIN) {
+						break;
+					} else {
+						perror("tslib: input ts_input_read read");
+						total = -1;
+						break;
+					}
+				} else {
+					fprintf(stderr, "tslib: Short Read %d/%d\n", sizeof(struct input_event),ret);
+					/* restart read to get next event */
+					continue;
+				}
 				break;
 			}
 

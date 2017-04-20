@@ -109,6 +109,8 @@ static int dejitter_read(struct tslib_module_info *info, struct ts_sample *samp,
 	int count = 0, ret;
 
 	ret = info->next->ops->read(info->next, samp, nr);
+	if (ret < 0) { return ret; }
+
 	for (s = samp; ret > 0; s++, ret--) {
 		if (s->pressure == 0) {
 			/*

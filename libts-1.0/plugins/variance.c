@@ -59,8 +59,10 @@ static int variance_read(struct tslib_module_info *info, struct ts_sample *samp,
 			cur = var->noise;
 			var->flags &= ~VAR_SUBMITNOISE;
 		} else {
-			if (info->next->ops->read(info->next, &cur, 1) < 1)
-				return count;
+			int res = info->next->ops->read(info->next, &cur, 1);
+			if (res < 1) {
+				return count == 0 ? res : count;
+			}
 		}
 
 		if (cur.pressure == 0) {
