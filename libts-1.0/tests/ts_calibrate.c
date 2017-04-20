@@ -237,12 +237,16 @@ int main()
 
 	get_sample (ts, &cal, 0, 10,        10,        "Top left");
 	clearbuf(ts);
+	usleep(500000);
 	get_sample (ts, &cal, 1, xres - 10, 10,        "Top right");
 	clearbuf(ts);
+	usleep(500000);
 	get_sample (ts, &cal, 2, xres - 10, yres - 10, "Bot right");
 	clearbuf(ts);
+	usleep(500000);
 	get_sample (ts, &cal, 3, 10,        yres - 10, "Bot left");
 	clearbuf(ts);
+	usleep(500000);
 	get_sample (ts, &cal, 4, xres / 2,  yres / 2,  "Center");
 
 	if (perform_calibration (&cal)) {
