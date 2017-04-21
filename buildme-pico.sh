@@ -25,6 +25,8 @@ mkdir -p $OUTPUT
 
 cd $SRC >> $LOG
 make distclean
+./autogen-clean.sh
+./autogen.sh
 
 echo "Configuring..."
 export CFLAGS="-s -march=armv6 -mfloat-abi=hard -mfpu=vfp"
@@ -37,6 +39,7 @@ make >> $LOG
 make DESTDIR=$OUTPUT install >> $LOG
 
 cd $OUTPUT/usr/local
+rm -rf share
 rm -rf include
 rm -rf lib/pkgconfig
 find lib -name '*\.la' -exec rm {} \;
