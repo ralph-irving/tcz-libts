@@ -18,7 +18,7 @@ date > $LOG
 echo "Cleaning up..."
 
 if [ -d $OUTPUT ]; then
-	rm -rf $OUTPUT >> $LOG
+	sudo rm -rf $OUTPUT >> $LOG
 fi
 
 mkdir -p $OUTPUT
@@ -39,11 +39,25 @@ make >> $LOG
 make DESTDIR=$OUTPUT install >> $LOG
 
 cd $OUTPUT/usr/local
-rm -rf share
+
 rm -rf include
 rm -rf lib/pkgconfig
 find lib -name '*\.la' -exec rm {} \;
-cp -p $OUTPUT/../ts.conf etc
+
+mkdir etc
+mkdir -p share/libts/files
+cp -p $OUTPUT/../ts.conf share/libts/files >> $LOG
+cp -p $OUTPUT/../pointercal share/libts/files >> $LOG
+
+mkdir tce.installed >> $LOG
+cp -p $OUTPUT/../tce.libts tce.installed/libts >> $LOG
+
+sudo chown -Rh root:root $OUTPUT >> $LOG
+
+sudo chown -R tc:staff tce.installed >> $LOG
+sudo chmod 755 tce.installed/libts >> $LOG
+sudo chown tc:staff share/libts/files/* >> $LOG
+sudo chmod 664 share/lirc/files/* >> $LOG
 
 echo "Building tcz"
 cd $OUTPUT/.. >> $LOG
@@ -52,7 +66,7 @@ if [ -f $TCZ ]; then
 	rm $TCZ >> $LOG
 fi
 
-mksquashfs $OUTPUT $TCZ -all-root >> $LOG
+mksquashfs $OUTPUT $TCZ >> $LOG
 md5sum `basename $TCZ` > ${TCZ}.md5.txt
 
 echo "$TCZ contains"
