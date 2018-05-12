@@ -1,0 +1,5 @@
+#!/bin/sh
+
+[ -f /usr/local/etc/pointercal ] || cp -p /usr/local/share/libts/files/pointercal /usr/local/etc/pointercal
+
+[ -f /usr/local/etc/ts.conf ] || cp -p /usr/local/share/libts/files/ts.conf /usr/local/etc/ts.conf

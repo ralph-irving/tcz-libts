@@ -1,0 +1,56 @@
+diff --git a/Makefile.am b/Makefile.am
+index bf07155..c5e9b39 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -17,4 +17,4 @@ ACLOCAL_AMFLAGS = -I m4/internal -I m4/external
+ AUTOMAKE_OPTIONS = 1.6
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+-pkgconfig_DATA = $(PACKAGE).pc
++pkgconfig_DATA = $(PACKAGE)-$(LT_RELEASE).pc $(PACKAGE).pc
+diff --git a/configure.ac b/configure.ac
+index 0a8aa68..808bca4 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -184,15 +184,18 @@ AS_IF([test "x$with_sdl2" = "xyes"], [
+ ])
+ 
+ # libts Library versioning
++LT_RELEASE=1.0
+ # increment if the interface changed
+-LT_CURRENT=9
++LT_CURRENT=0
+ # increment if anything changed. set to 0 if current was incremented!
+-LT_REVISION=1
++LT_REVISION=0
+ # increment if the interface change is backwards compatible (an addition). set to 0 if not.
+-LT_AGE=9
++LT_AGE=0
++AC_SUBST(LT_RELEASE)
+ AC_SUBST(LT_CURRENT)
+ AC_SUBST(LT_REVISION)
+ AC_SUBST(LT_AGE)
++AX_DEFINE_SUBST([LIBTS_VERSION_RELEASE], [$LT_RELEASE], [library current number])
+ AX_DEFINE_SUBST([LIBTS_VERSION_CURRENT], [$LT_CURRENT], [library current number])
+ AX_DEFINE_SUBST([LIBTS_VERSION_REVISION], [$LT_REVISION], [library revision number])
+ AX_DEFINE_SUBST([LIBTS_VERSION_AGE], [$LT_AGE], [library age number])
+@@ -204,5 +207,5 @@ AC_CONFIG_FILES([Makefile
+                  tests/Makefile
+                  tools/Makefile
+                  doc/Makefile
+-                 tslib.pc:tslib.pc.in])
++                 tslib-$LT_RELEASE.pc:tslib.pc.in])
+ AC_OUTPUT
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 86dc02c..6405bdc 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -138,7 +138,7 @@ libts_la_SOURCES += $(top_srcdir)/plugins/cy8mrln-palmpre.c
+ endif
+ 
+ libts_la_LDFLAGS = -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) \
+-		   -export-dynamic
++		   -release $(LT_RELEASE) -export-dynamic libts_la_LIBADD  = -ldl
+ if WINDOWS
+ libts_la_LDFLAGS += -no-undefined
+ endif
