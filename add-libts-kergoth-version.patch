@@ -9,7 +9,7 @@ index bf07155..c5e9b39 100644
 -pkgconfig_DATA = $(PACKAGE).pc
 +pkgconfig_DATA = $(PACKAGE)-$(LT_RELEASE).pc $(PACKAGE).pc
 diff --git a/configure.ac b/configure.ac
-index 0a8aa68..808bca4 100644
+index 0a8aa68..0876d96 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -184,15 +184,18 @@ AS_IF([test "x$with_sdl2" = "xyes"], [
@@ -34,11 +34,12 @@ index 0a8aa68..808bca4 100644
  AX_DEFINE_SUBST([LIBTS_VERSION_CURRENT], [$LT_CURRENT], [library current number])
  AX_DEFINE_SUBST([LIBTS_VERSION_REVISION], [$LT_REVISION], [library revision number])
  AX_DEFINE_SUBST([LIBTS_VERSION_AGE], [$LT_AGE], [library age number])
-@@ -204,5 +207,5 @@ AC_CONFIG_FILES([Makefile
+@@ -204,5 +207,6 @@ AC_CONFIG_FILES([Makefile
                   tests/Makefile
                   tools/Makefile
                   doc/Makefile
 -                 tslib.pc:tslib.pc.in])
++                 tslib.pc:tslib.pc.in
 +                 tslib-$LT_RELEASE.pc:tslib.pc.in])
  AC_OUTPUT
 diff --git a/src/Makefile.am b/src/Makefile.am
