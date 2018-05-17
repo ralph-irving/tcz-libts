@@ -88,10 +88,10 @@ unsquashfs -ll $TCZ
 echo -e "Title:\t\t$TCZ" > $TCZINFO
 echo -e "Description:\tC library for filtering touchscreen events" >> $TCZINFO
 echo -e "Version:\t$(grep ^VERSION $SRC/Makefile | awk '{printf "%s", $3}')" >> $TCZINFO
-echo -e "Commit:\t\t$(cd $SRC; git show | grep commit | awk '{print $2}')" >> $TCZINFO
+echo -e "Commit:\t\t$(git log | head -1 | grep commit | awk '{print $2}')" >> $TCZINFO
 echo -e "Author:\t\tMartin Kepplinger" >> $TCZINFO
 echo -e "Original-site:\t$(grep url .git/config | awk '{print $3}')" >> $TCZINFO
 echo -e "Copying-policy:\tLGPLv2" >> $TCZINFO
 echo -e "Size:\t\t$(ls -lk $TCZ | awk '{print $5}')k" >> $TCZINFO
-echo -e "Extension_by:\tpiCorePlayer team: https://www.picoreplayer.org" >> $TCZINFO
-echo -e "\t\tCompiled for piCore 9.x" >> $TCZINFO
+echo -e "Extension_by:\tRalph Irving" >> $TCZINFO
+echo -e "\t\tCompiled for piCore 8.x" >> $TCZINFO
