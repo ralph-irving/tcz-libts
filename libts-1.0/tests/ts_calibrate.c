@@ -6,133 +6,47 @@
  * This file is placed under the GPL.  Please see the file
  * COPYING for more details.
  *
+ * SPDX-License-Identifier: GPL-2.0+
  *
- * Basic test program for touchscreen library.
+ *
+ * Graphical touchscreen calibration tool. This writes the configuration
+ * file used by tslib's "linear" filter plugin module to transform the
+ * touch samples according to the calibration.
  */
-#include "config.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <sys/stat.h>
-#include <linux/kd.h>
-#include <linux/vt.h>
-#include <linux/fb.h>
+#include <fcntl.h>
+#include <getopt.h>
+#include <errno.h>
 
 #include "tslib.h"
 
 #include "fbutils.h"
 #include "testutils.h"
+#include "ts_calibrate.h"
 
-static int palette [] =
-{
+static int palette[] = {
 	0x000000, 0xffe080, 0xffffff, 0xe0c0a0
 };
-#define NR_COLORS (sizeof (palette) / sizeof (palette [0]))
-
-typedef struct {
-	int x[5], xfb[5];
-	int y[5], yfb[5];
-	int a[7];
-} calibration;
+#define NR_COLORS (sizeof(palette) / sizeof(palette[0]))
 
 static void sig(int sig)
 {
-	close_framebuffer ();
-	fflush (stderr);
-	printf ("signal %d caught\n", sig);
-	fflush (stdout);
-	exit (1);
+	close_framebuffer();
+	fflush(stderr);
+	printf("signal %d caught\n", sig);
+	fflush(stdout);
+	exit(1);
 }
 
-int perform_calibration(calibration *cal) {
-	int j;
-	float n, x, y, x2, y2, xy, z, zx, zy;
-	float det, a, b, c, e, f, i;
-	float scaling = 65536.0;
-
-// Get sums for matrix
-	n = x = y = x2 = y2 = xy = 0;
-	for(j=0;j<5;j++) {
-		n += 1.0;
-		x += (float)cal->x[j];
-		y += (float)cal->y[j];
-		x2 += (float)(cal->x[j]*cal->x[j]);
-		y2 += (float)(cal->y[j]*cal->y[j]);
-		xy += (float)(cal->x[j]*cal->y[j]);
-	}
-
-// Get determinant of matrix -- check if determinant is too small
-	det = n*(x2*y2 - xy*xy) + x*(xy*y - x*y2) + y*(x*xy - y*x2);
-	if(det < 0.1 && det > -0.1) {
-		printf("ts_calibrate: determinant is too small -- %f\n",det);
-		return 0;
-	}
-
-// Get elements of inverse matrix
-	a = (x2*y2 - xy*xy)/det;
-	b = (xy*y - x*y2)/det;
-	c = (x*xy - y*x2)/det;
-	e = (n*y2 - y*y)/det;
-	f = (x*y - n*xy)/det;
-	i = (n*x2 - x*x)/det;
-
-// Get sums for x calibration
-	z = zx = zy = 0;
-	for(j=0;j<5;j++) {
-		z += (float)cal->xfb[j];
-		zx += (float)(cal->xfb[j]*cal->x[j]);
-		zy += (float)(cal->xfb[j]*cal->y[j]);
-	}
-
-// Now multiply out to get the calibration for framebuffer x coord
-	cal->a[0] = (int)((a*z + b*zx + c*zy)*(scaling));
-	cal->a[1] = (int)((b*z + e*zx + f*zy)*(scaling));
-	cal->a[2] = (int)((c*z + f*zx + i*zy)*(scaling));
-
-	printf("%f %f %f\n",(a*z + b*zx + c*zy),
-				(b*z + e*zx + f*zy),
-				(c*z + f*zx + i*zy));
-
-// Get sums for y calibration
-	z = zx = zy = 0;
-	for(j=0;j<5;j++) {
-		z += (float)cal->yfb[j];
-		zx += (float)(cal->yfb[j]*cal->x[j]);
-		zy += (float)(cal->yfb[j]*cal->y[j]);
-	}
-
-// Now multiply out to get the calibration for framebuffer y coord
-	cal->a[3] = (int)((a*z + b*zx + c*zy)*(scaling));
-	cal->a[4] = (int)((b*z + e*zx + f*zy)*(scaling));
-	cal->a[5] = (int)((c*z + f*zx + i*zy)*(scaling));
-
-	printf("%f %f %f\n",(a*z + b*zx + c*zy),
-				(b*z + e*zx + f*zy),
-				(c*z + f*zx + i*zy));
-
-// If we got here, we're OK, so assign scaling to a[6] and return
-	cal->a[6] = (int)scaling;
-	return 1;
-/*	
-// This code was here originally to just insert default values
-	for(j=0;j<7;j++) {
-		c->a[j]=0;
-	}
-	c->a[1] = c->a[5] = c->a[6] = 1;
-	return 1;
-*/
-
-}
-
-static void get_sample (struct tsdev *ts, calibration *cal,
-			int index, int x, int y, char *name)
+static void get_sample(struct tsdev *ts, calibration *cal,
+		       int index, int x, int y, char *name)
 {
 	static int last_x = -1, last_y;
 
@@ -141,25 +55,26 @@ static void get_sample (struct tsdev *ts, calibration *cal,
 		int dx = ((x - last_x) << 16) / NR_STEPS;
 		int dy = ((y - last_y) << 16) / NR_STEPS;
 		int i;
+
 		last_x <<= 16;
 		last_y <<= 16;
 		for (i = 0; i < NR_STEPS; i++) {
-			put_cross (last_x >> 16, last_y >> 16, 2 | XORMODE);
-			usleep (1000);
-			put_cross (last_x >> 16, last_y >> 16, 2 | XORMODE);
+			put_cross(last_x >> 16, last_y >> 16, 2 | XORMODE);
+			usleep(1000);
+			put_cross(last_x >> 16, last_y >> 16, 2 | XORMODE);
 			last_x += dx;
 			last_y += dy;
 		}
 	}
 
 	put_cross(x, y, 2 | XORMODE);
-	getxy (ts, &cal->x [index], &cal->y [index]);
+	getxy(ts, &cal->x[index], &cal->y[index]);
 	put_cross(x, y, 2 | XORMODE);
 
-	last_x = cal->xfb [index] = x;
-	last_y = cal->yfb [index] = y;
+	last_x = cal->xfb[index] = x;
+	last_y = cal->yfb[index] = y;
 
-	printf("%s : X = %4d Y = %4d\n", name, cal->x [index], cal->y [index]);
+	printf("%s : X = %4d Y = %4d\n", name, cal->x[index], cal->y[index]);
 }
 
 static void clearbuf(struct tsdev *ts)
@@ -178,22 +93,47 @@ static void clearbuf(struct tsdev *ts)
 		tv.tv_usec = 0;
 
 		nfds = select(fd + 1, &fdset, NULL, NULL, &tv);
-		if (nfds == 0) break;
+		if (nfds == 0)
+			break;
 
 		if (ts_read_raw(ts, &sample, 1) < 0) {
-			perror("ts_read");
+			perror("ts_read_raw");
 			exit(1);
 		}
 	}
 }
 
-int main()
+static void help(void)
+{
+	ts_print_ascii_logo(16);
+	print_version();
+
+	printf("\n");
+	printf("Usage: ts_calibrate [-r <rotate_value>] [--version]\n");
+	printf("\n");
+	printf("-r --rotate\n");
+	printf("        <rotate_value> 0 ... no rotation; 0 degree (default)\n");
+	printf("                       1 ... clockwise orientation; 90 degrees\n");
+	printf("                       2 ... upside down orientation; 180 degrees\n");
+	printf("                       3 ... counterclockwise orientation; 270 degrees\n");
+	printf("-h --help\n");
+	printf("                       print this help text\n");
+	printf("-v --version\n");
+	printf("                       print version information only\n");
+	printf("\n");
+	printf("Example (Linux): ts_calibrate -r $(cat /sys/class/graphics/fbcon/rotate)\n");
+	printf("\n");
+}
+
+int main(int argc, char **argv)
 {
 	struct tsdev *ts;
-	calibration cal;
+	calibration cal = {
+		.x = { 0 },
+		.y = { 0 },
+	};
 	int cal_fd;
 	char cal_buffer[256];
-	char *tsdevice = NULL;
 	char *calfile = NULL;
 	unsigned int i, len;
 
@@ -201,77 +141,124 @@ int main()
 	signal(SIGINT, sig);
 	signal(SIGTERM, sig);
 
-	if( (tsdevice = getenv("TSLIB_TSDEVICE")) != NULL ) {
-		ts = ts_open(tsdevice,0);
-	} else {
-		if (!(ts = ts_open("/dev/input/event0", 0)))
-			ts = ts_open("/dev/touchscreen/ucb1x00", 0);
+	while (1) {
+		const struct option long_options[] = {
+			{ "help",         no_argument,       NULL, 'h' },
+			{ "rotate",       required_argument, NULL, 'r' },
+			{ "version",      no_argument,       NULL, 'v' },
+		};
+
+		int option_index = 0;
+		int c = getopt_long(argc, argv, "hvr:", long_options, &option_index);
+
+		errno = 0;
+		if (c == -1)
+			break;
+
+		switch (c) {
+		case 'h':
+			help();
+			return 0;
+
+		case 'v':
+			print_version();
+			return 0;
+
+		case 'r':
+			/* extern in fbutils.h */
+			rotation = atoi(optarg);
+			if (rotation < 0 || rotation > 3) {
+				help();
+				return 0;
+			}
+			break;
+
+		default:
+			help();
+			return 0;
+		}
+
+		if (errno) {
+			char str[9];
+			sprintf(str, "option ?");
+			str[7] = c & 0xff;
+			perror(str);
+		}
 	}
 
+	ts = ts_setup(NULL, 0);
 	if (!ts) {
-		perror("ts_open");
-		exit(1);
-	}
-	if (ts_config(ts)) {
-		perror("ts_config");
+		perror("ts_setup");
 		exit(1);
 	}
 
 	if (open_framebuffer()) {
 		close_framebuffer();
+		ts_close(ts);
 		exit(1);
 	}
 
 	for (i = 0; i < NR_COLORS; i++)
-		setcolor (i, palette [i]);
+		setcolor(i, palette[i]);
 
-	put_string_center (xres / 2, yres / 4,
-			   "TSLIB calibration utility", 1);
-	put_string_center (xres / 2, yres / 4 + 20,
-			   "Touch crosshair to calibrate", 2);
+	put_string_center(xres / 2, yres / 4,
+			  "Touchscreen calibration utility", 1);
+	put_string_center(xres / 2, yres / 4 + 20,
+			  "Touch crosshair to calibrate", 2);
 
 	printf("xres = %d, yres = %d\n", xres, yres);
 
-	// Clear the buffer
+	/* Clear the buffer */
 	clearbuf(ts);
 
-	get_sample (ts, &cal, 0, 10,        10,        "Top left");
+	get_sample(ts, &cal, 0, 50,        50,        "Top left");
 	clearbuf(ts);
-	usleep(500000);
-	get_sample (ts, &cal, 1, xres - 10, 10,        "Top right");
+	get_sample(ts, &cal, 1, xres - 50, 50,        "Top right");
 	clearbuf(ts);
-	usleep(500000);
-	get_sample (ts, &cal, 2, xres - 10, yres - 10, "Bot right");
+	get_sample(ts, &cal, 2, xres - 50, yres - 50, "Bot right");
 	clearbuf(ts);
-	usleep(500000);
-	get_sample (ts, &cal, 3, 10,        yres - 10, "Bot left");
+	get_sample(ts, &cal, 3, 50,        yres - 50, "Bot left");
 	clearbuf(ts);
-	usleep(500000);
-	get_sample (ts, &cal, 4, xres / 2,  yres / 2,  "Center");
+	get_sample(ts, &cal, 4, xres / 2,  yres / 2,  "Center");
 
 	if (perform_calibration (&cal)) {
-		printf ("Calibration constants: ");
-		for (i = 0; i < 7; i++) printf("%d ", cal.a [i]);
+		printf("Calibration constants: ");
+		for (i = 0; i < 7; i++)
+			printf("%d ", cal.a[i]);
 		printf("\n");
 		if ((calfile = getenv("TSLIB_CALIBFILE")) != NULL) {
-			cal_fd = open (calfile, O_CREAT | O_TRUNC | O_RDWR,
-			               S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+			cal_fd = open(calfile, O_CREAT | O_TRUNC | O_RDWR,
+				      S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 		} else {
-			cal_fd = open (TS_POINTERCAL, O_CREAT | O_TRUNC | O_RDWR,
-			               S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+			cal_fd = open(TS_POINTERCAL, O_CREAT | O_TRUNC | O_RDWR,
+				      S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 		}
-		len = sprintf(cal_buffer,"%d %d %d %d %d %d %d %d %d",
-		              cal.a[1], cal.a[2], cal.a[0],
-		              cal.a[4], cal.a[5], cal.a[3], cal.a[6],
-		              xres, yres);
-		write (cal_fd, cal_buffer, len);
-		close (cal_fd);
-                i = 0;
+		if (cal_fd < 0) {
+			perror("open");
+			close_framebuffer();
+			ts_close(ts);
+			exit(1);
+		}
+
+		len = sprintf(cal_buffer, "%d %d %d %d %d %d %d %d %d",
+			      cal.a[1], cal.a[2], cal.a[0],
+			      cal.a[4], cal.a[5], cal.a[3], cal.a[6],
+			      xres, yres);
+		if (write(cal_fd, cal_buffer, len) == -1) {
+			perror("write");
+			close_framebuffer();
+			ts_close(ts);
+			exit(1);
+		}
+		close(cal_fd);
+		i = 0;
 	} else {
 		printf("Calibration failed.\n");
 		i = -1;
 	}
 
+	fillrect(0, 0, xres - 1, yres - 1, 0);
 	close_framebuffer();
+	ts_close(ts);
 	return i;
 }
