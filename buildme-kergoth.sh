@@ -6,6 +6,7 @@ SRC=${TS}-$TSVERSION
 LOG=$PWD/config.log
 OUTPUT=$PWD/${TS}-build
 TCZ=${TS}.tcz
+TCZINFO=${TCZ}.info
 
 # Build requires these extra packages in addition to the raspbian 7.6 build tools
 # sudo apt-get install squashfs-tools bsdtar
@@ -34,11 +35,13 @@ if [ -d $SRC ]; then
                 rm -rf autom4te.cache
         fi
         patch -R -p1 -i $OUTPUT/../add-libts-kergoth-version.patch >> $LOG || exit 1
+        patch -R -p1 -i $OUTPUT/../ts-calibrate-fix-edges.patch >> $LOG || exit 1
 	
         git pull >> $LOG
 fi
 
 patch -p1 -i $OUTPUT/../add-libts-kergoth-version.patch >> $LOG || exit 1
+patch -p1 -i $OUTPUT/../ts-calibrate-fix-edges.patch >> $LOG || exit 1
 
 make distclean >> $LOG
 ./autogen-clean.sh
@@ -84,6 +87,10 @@ sudo chown tc:staff share/libts/files/* >> $LOG
 sudo chmod 664 share/libts/files/* >> $LOG
 
 echo "Building tcz"
+cd $OUTPUT >> $LOG
+
+find * -not -type d > $OUTPUT/../${TCZ}.list
+
 cd $OUTPUT/.. >> $LOG
 
 if [ -f $TCZ ]; then
@@ -95,3 +102,14 @@ md5sum `basename $TCZ` > ${TCZ}.md5.txt
 
 echo "$TCZ contains"
 unsquashfs -ll $TCZ
+
+echo -e "Title:\t\t$TCZ" > $TCZINFO
+echo -e "Description:\tC library for filtering touchscreen events" >> $TCZINFO
+echo -e "Version:\t$(grep ^VERSION $SRC/Makefile | awk '{printf "%s", $3}')" >> $TCZINFO
+echo -e "Commit:\t\t$(cd $SRC; git show | grep commit | awk '{print $2}')" >> $TCZINFO
+echo -e "Author:\t\tMartin Kepplinger" >> $TCZINFO
+echo -e "Original-site:\t$(grep url $SRC/.git/config | awk '{print $3}')" >> $TCZINFO
+echo -e "Copying-policy:\tLGPLv2" >> $TCZINFO
+echo -e "Size:\t\t$(ls -lk $TCZ | awk '{print $5}')k" >> $TCZINFO
+echo -e "Extension_by:\tpiCorePlayer team: https://www.picoreplayer.org" >> $TCZINFO
+echo -e "\t\tCompiled for piCore 9.x" >> $TCZINFO
