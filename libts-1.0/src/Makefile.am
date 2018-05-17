@@ -138,7 +138,7 @@ libts_la_SOURCES += $(top_srcdir)/plugins/cy8mrln-palmpre.c
 endif
 
 libts_la_LDFLAGS = -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) \
-		   -export-dynamic
+		   -release $(LT_RELEASE) -export-dynamic libts_la_LIBADD  = -ldl
 if WINDOWS
 libts_la_LDFLAGS += -no-undefined
 endif

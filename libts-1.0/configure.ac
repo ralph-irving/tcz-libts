@@ -184,15 +184,18 @@ AS_IF([test "x$with_sdl2" = "xyes"], [
 ])
 
 # libts Library versioning
+LT_RELEASE=1.0
 # increment if the interface changed
-LT_CURRENT=9
+LT_CURRENT=0
 # increment if anything changed. set to 0 if current was incremented!
-LT_REVISION=1
+LT_REVISION=0
 # increment if the interface change is backwards compatible (an addition). set to 0 if not.
-LT_AGE=9
+LT_AGE=0
+AC_SUBST(LT_RELEASE)
 AC_SUBST(LT_CURRENT)
 AC_SUBST(LT_REVISION)
 AC_SUBST(LT_AGE)
+AX_DEFINE_SUBST([LIBTS_VERSION_RELEASE], [$LT_RELEASE], [library current number])
 AX_DEFINE_SUBST([LIBTS_VERSION_CURRENT], [$LT_CURRENT], [library current number])
 AX_DEFINE_SUBST([LIBTS_VERSION_REVISION], [$LT_REVISION], [library revision number])
 AX_DEFINE_SUBST([LIBTS_VERSION_AGE], [$LT_AGE], [library age number])
@@ -204,5 +207,6 @@ AC_CONFIG_FILES([Makefile
                  tests/Makefile
                  tools/Makefile
                  doc/Makefile
-                 tslib.pc:tslib.pc.in])
+                 tslib.pc:tslib.pc.in
+                 tslib-$LT_RELEASE.pc:tslib.pc.in])
 AC_OUTPUT

@@ -17,4 +17,4 @@ ACLOCAL_AMFLAGS = -I m4/internal -I m4/external
 AUTOMAKE_OPTIONS = 1.6
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = $(PACKAGE).pc
+pkgconfig_DATA = $(PACKAGE)-$(LT_RELEASE).pc $(PACKAGE).pc
