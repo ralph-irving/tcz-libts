@@ -1,0 +1,10 @@
+Title:		libts.tcz
+Description:	C library for filtering touchscreen events
+Version:	1.16+
+Commit:		293e9e1478702d313413d14e419e4ab4db5e9c94
+Author:		Martin Kepplinger
+Original-site:	https://github.com/ralph-irving/tcz-libts.git
+Copying-policy:	LGPLv2
+Size:		86016k
+Extension_by:	Ralph Irving
+		Compiled for piCore 8.x
